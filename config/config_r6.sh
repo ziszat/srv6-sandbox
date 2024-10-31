@@ -1,15 +1,15 @@
 #!/bin/bash
-
+sysctl -w net.ipv6.conf.all.disable_ipv6=0
 
 # Configure Interfaces
-ifconfig enp0s8 up
-ip addr add 10.0.1.1/24 dev enp0s8
+ifconfig eth1 up
+ip addr add 10.0.1.1/24 dev eth1
 
-ifconfig enp0s9 up
-ip -6 addr add 2001:46::2/64 dev enp0s9
+ifconfig eth2 up
+ip -6 addr add 2001:46::2/64 dev eth2
 
-ifconfig enp0s10 up
-ip -6 addr add 2001:56::2/64 dev enp0s10
+ifconfig eth3 up
+ip -6 addr add 2001:56::2/64 dev eth3
 
 ifconfig lo up
 ip -6 addr add fc00:6::6/64 dev lo
@@ -22,15 +22,15 @@ sysctl -w net.ipv6.conf.all.forwarding=1
 # Accept SRv6 traffic
 sysctl -w net.ipv6.conf.all.seg6_enabled=1
 sysctl -w net.ipv6.conf.lo.seg6_enabled=1
-sysctl -w net.ipv6.conf.enp0s8.seg6_enabled=1
-sysctl -w net.ipv6.conf.enp0s9.seg6_enabled=1
-sysctl -w net.ipv6.conf.enp0s10.seg6_enabled=1
+sysctl -w net.ipv6.conf.eth1.seg6_enabled=1
+sysctl -w net.ipv6.conf.eth2.seg6_enabled=1
+sysctl -w net.ipv6.conf.eth3.seg6_enabled=1
 
 
 # Configure Routing
-ip -6 route del default
+# ip -6 route del default
 
-ip -6 route add default via 2001:56::1
+# ip -6 route add default via 2001:56::1
 # ip -6 route add fc00:b::/64 via 2001:b::2
 ip -6 route add fc00:4::/64 via 2001:46::1
 ip -6 route add fc00:5::/64 via 2001:56::1
@@ -42,10 +42,12 @@ sysctl -w net.ipv6.conf.all.forwarding=1
 
 
 # # Configure SR policies
-ip -6 route add fc00:6::a/128 encap seg6local action End.DX4 nh4 10.0.1.0 dev enp0s8
-# ip -6 route add fc00:6::a/128 encap seg6local action End dev enp0s10
-# ip route add 10.0.0.0/24 encap seg6 mode encap segs fc00:2::a,fc00:1::a dev enp0s9
-
+ip -6 route add fc00:6::a/128 encap seg6local action End.DX4 nh4 10.0.1.0 dev eth1
+# ip -6 route add fc00:6::a/128 encap seg6local action End dev eth3
+# ip route add 10.0.0.0/24 encap seg6 mode encap segs fc00:2::a,fc00:1::a dev eth2
+cd SRv6-net-prog/srext/
+make && make install && depmod -a && modprobe srext
+srconf localsid add fc00:66::a end.dx4 ip 10.0.1.0 eth1
 
 # # Install required softwares
 # export DEBIAN_FRONTEND=noninteractive
@@ -68,11 +70,11 @@ ip -6 route add fc00:6::a/128 encap seg6local action End.DX4 nh4 10.0.1.0 dev en
 # ./configure && make && make install
 
 # # Configure Interfaces
-# ifconfig enp0s8 up
-# ip -6 addr add fc00:23::3/64 dev enp0s8
+# ifconfig eth1 up
+# ip -6 addr add fc00:23::3/64 dev eth1
 
-# ifconfig enp0s9 up
-# ip -6 addr add fc00:36::3/64 dev enp0s9
+# ifconfig eth2 up
+# ip -6 addr add fc00:36::3/64 dev eth2
 
 # # Enable forwarding
 # sysctl -w net.ipv6.conf.all.forwarding=1
@@ -80,23 +82,23 @@ ip -6 route add fc00:6::a/128 encap seg6local action End.DX4 nh4 10.0.1.0 dev en
 # # Accept SRv6 traffic
 # sysctl -w net.ipv6.conf.all.seg6_enabled=1
 # sysctl -w net.ipv6.conf.lo.seg6_enabled=1
-# sysctl -w net.ipv6.conf.enp0s8.seg6_enabled=1
-# sysctl -w net.ipv6.conf.enp0s9.seg6_enabled=1
+# sysctl -w net.ipv6.conf.eth1.seg6_enabled=1
+# sysctl -w net.ipv6.conf.eth2.seg6_enabled=1
 
 # # Configure VNFs
 # cd ~/
 # rm -rf sr-sfc-demo/
 # git clone https://github.com/SRouting/sr-sfc-demo
 # cd sr-sfc-demo/config/
-# sh deploy-vnf.sh add f2 veth0 venp0s8 fd00:3:0::f2:1/64 fd00:3:1::f2:1/64 fd00:3:0::f2:2/64 fd00:3:1::f2:2/64
+# sh deploy-vnf.sh add f2 veth0 veth1 fd00:3:0::f2:1/64 fd00:3:1::f2:1/64 fd00:3:0::f2:2/64 fd00:3:1::f2:2/64
 
 # # Install and configure srext (SR proxy)
 # cd ~/
 # git clone https://github.com/SRouting/SRv6-net-prog
 # cd SRv6-net-prog/srext/
 # make && make install && depmod -a && modprobe srext
-# srconf localsid add fc00:3::f2:AD60 end.ad6 ip fd00:3:0::f2:2 veth0 venp0s8
-# srconf localsid add fc00:3::f2:AD61 end.ad6 ip fd00:3:1::f2:2 venp0s8 veth0
+# srconf localsid add fc00:3::f2:AD60 end.ad6 ip fd00:3:0::f2:2 veth0 veth1
+# srconf localsid add fc00:3::f2:AD61 end.ad6 ip fd00:3:1::f2:2 veth1 veth0
 
 # # Configure Routing
 # ip -6 route add fc00:6::/64 via fc00:36::6

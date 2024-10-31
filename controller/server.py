@@ -20,12 +20,12 @@ rest_server = None
 # Netlink socket
 ip_route = None
 # Cache of the resolved interfaces
-interfaces = ["enp0s8", "enp0s9"]
+interfaces = ["eth1", "eth2", "eth3"]
 idxs = {}
 # logger reference
 logger = logging.getLogger(__name__)
 # Server ip/ports
-REST_IP = "fc00:1::1"
+REST_IP = "2001:b::1"
 REST_PORT = 8080
 # Debug option
 SERVER_DEBUG = False
@@ -36,6 +36,7 @@ ResponseStatus = namedtuple("HTTPStatus", ["code", "message"])
 ResponseData = namedtuple("ResponseData", ["status"])
 HTTP_STATUS = {
     "OK": ResponseStatus(code=204, message="OK"),
+    "REPLY": ResponseStatus(code=200, message="GET"),
     "NOT_FOUND": ResponseStatus(code=404, message="Not found"),
 }
 PUT = "PUT"
@@ -113,6 +114,43 @@ class SRv6HTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(status.code, status.message)
         self.end_headers()
 
+    def filter_srv6_paths(self, routes):
+        """Filter and format SRv6 paths for JSON serialization."""
+        srv6_paths = []
+        for route in routes:
+            # Filter for SRv6 paths that contain segments
+            path_info = {}
+            for attr, value in route.get('attrs', []):
+                if attr == 'RTA_DST':
+                    path_info['destination'] = value
+                elif attr == 'RTA_ENCAP':
+                    # 确保存在 SRv6 路径信息
+                    encap_attrs = value.get('attrs', [])
+                    for encap_attr, encap_value in encap_attrs:
+                        if encap_attr == 'SEG6_IPTUNNEL_SRH':
+                            path_info['segments'] = encap_value.get('segs', [])
+            if 'segments' in path_info:  # 确保路径信息完整
+                srv6_paths.append(path_info)
+        return srv6_paths
+
+    def filter_sids(self, routes):
+        """Filter and format SID entries for JSON serialization."""
+        sids = []
+        for route in routes:
+            sid_info = {}
+            for attr, value in route.get('attrs', []):
+                if attr == 'RTA_DST':
+                    sid_info['destination'] = value
+                elif attr == 'RTA_ENCAP':
+                    # 查找包含 SRv6 本地段（SID）信息的属性
+                    encap_attrs = value.get('attrs', [])
+                    for encap_attr, encap_value in encap_attrs:
+                        if encap_attr == 'SEG6_IPTUNNEL_SRH':
+                            sid_info['seglocal'] = encap_value.get('segs', [])
+            if 'seglocal' in sid_info:  # 确保 SID 信息完整
+                sids.append(sid_info)
+        return sids
+
     def do_POST(self):
         # Extract values from the query string
         path, _, query_string = self.path.partition('?')
@@ -134,6 +172,51 @@ class SRv6HTTPRequestHandler(BaseHTTPRequestHandler):
             response = ResponseData(status=HTTP_STATUS["NOT_FOUND"])
         # Done, send back the respons
         self.send_headers(response.status)
+        
+    def do_GET(self):
+        # Extract values from the query string
+        path, _, query_string = self.path.partition('?')
+        query = parse_qs(query_string)
+
+        # Handle requests based on path
+        if path == "//view-paths":
+            # Retrieve SRv6 paths
+            try:
+                routes = ip_route.get_routes(family=socket.AF_INET)  # Main routing table
+                paths = self.filter_srv6_paths(routes)
+                print(paths)
+                response = ResponseData(status=HTTP_STATUS["REPLY"])
+                self.send_response(response.status.code, response.status.message)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(paths, indent=2).encode())
+            except Exception as e:
+                logger.error(f"Error retrieving SRv6 paths: {e}")
+                response = ResponseData(status=HTTP_STATUS["NOT_FOUND"])
+                self.send_headers(response.status)
+
+        elif path == "//view-sid":
+            # Retrieve SID entries
+            try:
+                routes = ip_route.get_routes(family=socket.AF_INET6)
+                sids = self.filter_sids(routes)
+                print(sids)
+                response = ResponseData(status=HTTP_STATUS["REPLY"])
+                self.send_response(response.status.code, response.status.message)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(sids, indent=2).encode())
+            except Exception as e:
+                logger.error(f"Error retrieving SID entries: {e}")
+                response = ResponseData(status=HTTP_STATUS["NOT_FOUND"])
+                self.send_headers(response.status)
+                
+        else:
+            # Path not found
+            logger.info("Requested path not supported")
+            response = ResponseData(status=HTTP_STATUS["NOT_FOUND"])
+            self.send_headers(response.status)
+
 
 
 # Start HTTP/HTTPS server

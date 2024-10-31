@@ -2,18 +2,16 @@ import requests
 import numpy as np
 
 MASTER_IP = {
-    "hosta": "10.0.0.2",
-    "hostb": "10.0.1.2",
-    "hostc": "10.0.x.2",
+    "hosta": "localhost",
+    "hostb": "localhost",
 }
 
 MASTER_PORT = {
-    "hosta": 30090,
-    "hostb": 9090,
-    "hostc": 9090
+    "hosta": 30091,
+    "hostb": 30092,
 }
 
-masters = ["hosta", "hostb", "hostc"]
+masters = ["hosta", "hostb"]
 
 def query_prometheus(prometheus_ip, port, query):
     url = f"http://{prometheus_ip}:{port}/api/v1/query"
@@ -42,10 +40,10 @@ def get_free_resources(prometheus_ip, port):
     }
 
 
-def get_resource(prometheus_ip, port):
+def get_resource(prometheus_ips, ports):
     resources = []
-    for _, port in enumerate(ports):
-        resources.append(get_free_resources(prometheus_ip, port))
+    for i in range(len(ports)):
+        resources.append(get_free_resources(prometheus_ips[i], ports[i]))
     return resources
 
 
@@ -99,60 +97,65 @@ def select_best_cluster(scores):
     return masters[np.argmax(scores)]  # 返回最佳集群的索引 (+1 是为了从 1 开始)
 
 
-prometheus_ip = "localhost"
+prometheus_ips = []
 ports = []
 for master in masters:
     ports.append(MASTER_PORT[master])
+    prometheus_ips.append(MASTER_IP[master])
+
+resources = get_resource(prometheus_ips, ports)
+# print(resources)
+
 
 # resources = get_resource(prometheus_ip, ports)
 
-resources = [
-    {
-        "cpu_usage": [
-            {"instance": "master", "value": [1697458245.123, "20.5"]},
-            {"instance": "node1", "value": [1697458245.456, "35.7"]},
-        ],
-        "memory_available": [
-            {"instance": "master", "value": [1697458245.123, "6457433088"]},
-            {"instance": "node1", "value": [1697458245.456, "4315213824"]},
-        ],
-        "storage_available": [
-            {"instance": "master", "value": [1697458245.123, "254612832768"]},
-            {"instance": "node1", "value": [1697458245.456, "128712832768"]},
-        ],
-    },
-    {
-        "cpu_usage": [
-            {"instance": "master", "value": [1697458300.123, "45.2"]},
-            {"instance": "node1", "value": [1697458300.456, "10.3"]},
-        ],
-        "memory_available": [
-            {"instance": "master", "value": [1697458300.123, "5438213120"]},
-            {"instance": "node1", "value": [1697458300.456, "7895213824"]},
-        ],
-        "storage_available": [
-            {"instance": "master", "value": [1697458300.123, "512432768000"]},
-            {"instance": "node1", "value": [1697458300.456, "612832768000"]},
-        ],
-    },
-    {
-        "cpu_usage": [
-            {"instance": "master", "value": [1697458355.123, "15.7"]},
-            {"instance": "node1", "value": [1697458355.456, "25.4"]},
-            {"instance": "node2", "value": [1697458355.789, "30.2"]},
-        ],
-        "memory_available": [
-            {"instance": "master", "value": [1697458355.123, "9876543216"]},
-            {"instance": "node1", "value": [1697458355.456, "7654321984"]},
-            {"instance": "node2", "value": [1697458355.789, "6543210987"]},
-        ],
-        "storage_available": [
-            {"instance": "master", "value": [1697458355.123, "300000000000"]},
-            {"instance": "node1", "value": [1697458355.456, "200000000000"]},
-            {"instance": "node2", "value": [1697458355.789, "150000000000"]},
-        ],
-    },
-]
+# resources = [
+#     {
+#         "cpu_usage": [
+#             {"instance": "master", "value": [1697458245.123, "20.5"]},
+#             {"instance": "node1", "value": [1697458245.456, "35.7"]},
+#         ],
+#         "memory_available": [
+#             {"instance": "master", "value": [1697458245.123, "6457433088"]},
+#             {"instance": "node1", "value": [1697458245.456, "4315213824"]},
+#         ],
+#         "storage_available": [
+#             {"instance": "master", "value": [1697458245.123, "254612832768"]},
+#             {"instance": "node1", "value": [1697458245.456, "128712832768"]},
+#         ],
+#     },
+#     {
+#         "cpu_usage": [
+#             {"instance": "master", "value": [1697458300.123, "45.2"]},
+#             {"instance": "node1", "value": [1697458300.456, "10.3"]},
+#         ],
+#         "memory_available": [
+#             {"instance": "master", "value": [1697458300.123, "5438213120"]},
+#             {"instance": "node1", "value": [1697458300.456, "7895213824"]},
+#         ],
+#         "storage_available": [
+#             {"instance": "master", "value": [1697458300.123, "512432768000"]},
+#             {"instance": "node1", "value": [1697458300.456, "612832768000"]},
+#         ],
+#     },
+#     {
+#         "cpu_usage": [
+#             {"instance": "master", "value": [1697458355.123, "15.7"]},
+#             {"instance": "node1", "value": [1697458355.456, "25.4"]},
+#             {"instance": "node2", "value": [1697458355.789, "30.2"]},
+#         ],
+#         "memory_available": [
+#             {"instance": "master", "value": [1697458355.123, "9876543216"]},
+#             {"instance": "node1", "value": [1697458355.456, "7654321984"]},
+#             {"instance": "node2", "value": [1697458355.789, "6543210987"]},
+#         ],
+#         "storage_available": [
+#             {"instance": "master", "value": [1697458355.123, "300000000000"]},
+#             {"instance": "node1", "value": [1697458355.456, "200000000000"]},
+#             {"instance": "node2", "value": [1697458355.789, "150000000000"]},
+#         ],
+#     },
+# ]
 
 # 对resources进行数据聚合处理
 aggregated_resources = aggregate_resource_data(resources)

@@ -1,5 +1,5 @@
-ifconfig enp0s8 up
-ip addr add 10.0.0.3/24 dev enp0s8
+ifconfig eth1 up
+ip addr add 10.0.0.3/24 dev eth1
 
 # Configure Routing
 # ip route add 10.0.1.0/24 via 10.0.0.1

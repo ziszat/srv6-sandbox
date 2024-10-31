@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configure Interfaces
-ifconfig enp0s8 up
-ip addr add 10.0.0.2/24 dev enp0s8
+ifconfig eth1 up
+ip addr add 10.0.0.2/24 dev eth1
 
 ip route add 10.0.114.0/24 via 10.0.0.1
 # Configure Routing

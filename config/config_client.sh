@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configure Interfaces
-ifconfig enp0s8 up
-ip addr add 10.0.114.2/24 dev enp0s8
+ifconfig eth1 up
+ip addr add 10.0.114.2/24 dev eth1
 
 # ifconfig enp0s9 up
 # ip -6 addr add 2001:b::2/64 dev enp0s9
@@ -20,7 +20,7 @@ ip route add 10.0.1.0/24 via 10.0.114.1
 # Accept SRv6 traffic
 # sysctl -w net.ipv6.conf.all.seg6_enabled=1
 # sysctl -w net.ipv6.conf.lo.seg6_enabled=1
-# sysctl -w net.ipv6.conf.enp0s8.seg6_enabled=1
+# sysctl -w net.ipv6.conf.eth1.seg6_enabled=1
 
 
 # Enable SR Aware IPtables
@@ -35,7 +35,7 @@ ip route add 10.0.1.0/24 via 10.0.114.1
 
 
 # Configure SRv6 Policy 
-# ip -6 route add fc00:b::a1/128 encap seg6local action End dev enp0s8
+# ip -6 route add fc00:b::a1/128 encap seg6local action End dev eth1
 
 
 # Configure snort rules
@@ -52,7 +52,7 @@ ip route add 10.0.1.0/24 via 10.0.114.1
 # rm -rf sr-sfc-demo
 # git clone https://github.com/SRouting/sr-sfc-demo
 # cd sr-sfc-demo/config/
-# sh deploy-term.sh add br1 venp0s8 inet6 fc00:b1::1/64 fc00:b1::2/64
+# sh deploy-term.sh add br1 veth1 inet6 fc00:b1::1/64 fc00:b1::2/64
 # sh deploy-term.sh add br2 veth2 inet6 fc00:b2::1/64 fc00:b2::2/64
 
 # # Configure Policy Based Routing (PBR)
@@ -63,7 +63,7 @@ ip route add 10.0.1.0/24 via 10.0.114.1
 # ip -6 rule add from fc00:b2::/64 lookup br2
 
 # # Configure SR SFC policies
-# ip -6 route add fc00:e::/64 encap seg6 mode encap segs fc00:2::f1:0,fc00:3::f2:AD60,fc00:6::D6 dev enp0s8 table br1
+# ip -6 route add fc00:e::/64 encap seg6 mode encap segs fc00:2::f1:0,fc00:3::f2:AD60,fc00:6::D6 dev eth1 table br1
 # ip -6 route add fc00:e::/64 encap seg6 mode encap segs fc00:5::f3:0,fc00:6::D6 dev eth2 table br2
 
 # # Configure Routing

@@ -15,10 +15,10 @@ ROUTER_SIDS = {
     "r0": "fc00:f::a",
     "r1": "fc00:1::a",
     "r2": "fc00:2::a",
-    "r3": "fc00:3::a",
+    "r3": "fc00:33::a",
     "r4": "fc00:4::a",
     "r5": "fc00:5::a",
-    "r6": "fc00:6::a",
+    "r6": "fc00:66::a",
 }
 
 
@@ -73,7 +73,7 @@ distances, previous_nodes = dijkstra(graph, "r0")
 # 打印每个路由器的最短路径和距离
 def print_paths(start, distances, previous_nodes):
     for node in distances:
-        if node == start:
+        if node == start or node == "r1" or node == "r2" or node == "r4" or node == "r5":
             continue
         path = []
         current = node
@@ -81,11 +81,11 @@ def print_paths(start, distances, previous_nodes):
             path.append(ROUTER_SIDS[current])
             current = previous_nodes[current]
         print(
-            f"Shortest path from {node} to {start}: {','.join(path)}, Distance: {distances[node]}"
+            f"Shortest path from {start} to {node}: {','.join(path)}, Distance: {distances[node]}"
         )
         path.reverse()
         print(
-            f"Shortest path from {start} to {node}: {','.join(path)}, Distance: {distances[node]}"
+            f"Shortest path from {node} to {start}: {','.join(path)}, Distance: {distances[node]}"
         )
 
 # 打印结果
